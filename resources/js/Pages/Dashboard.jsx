@@ -6,22 +6,24 @@ export default function Dashboard({ auth }) {
     const { subscriptions } = usePage().props;
     const [remainingScreens, setRemainingScreens] = useState({});
 
-    const handleConnect = (subscription) => {
+    const handleConnect = async (subscription) => {
         if (remainingScreens[subscription.id] === 0) {
             return;
         }
-
+    
+        let newRemainingScreens;
         if (remainingScreens[subscription.id] === undefined) {
-            setRemainingScreens((prevState) => ({
-                ...prevState,
-                [subscription.id]: subscription.remaining_screens - 1,
-            }));
+            newRemainingScreens = subscription.connected_users - 1;
         } else {
-            setRemainingScreens((prevState) => ({
-                ...prevState,
-                [subscription.id]: subscription.remaining_screens + 1,
-            }));
+            newRemainingScreens = subscription.connected_users + 1;
         }
+    
+        setRemainingScreens((prevState) => ({
+            ...prevState,
+            [subscription.id]: newRemainingScreens,
+        }));
+    
+        await axios.post('/api/subscriptions/' + subscription.id + '/connect');
     };
 
     return (
@@ -32,26 +34,33 @@ export default function Dashboard({ auth }) {
             <Head title="Panel souscriptions" />
 
             <div>
-                <h1>Bienvenue {user.name} !</h1>
+                <h1>Bienvenue {auth.user.name} !</h1>
                 <ul>
                     {subscriptions.map((subscription) => (
                         <li key={subscription.id}>
-                            {subscription.name} - {subscription.connected_users} utilisateurs connectés
-                            {subscription.connected_users > 0 ? (
-                                <span style={{ color: 'red' }}>Connecté</span>
-                            ) : (
-                                <span style={{ color: 'green' }}>Non connecté</span>
-                            )}
-                            <button
-                                onClick={() => handleConnect(subscription)}
-                                disabled={remainingScreens[subscription.id] === 0}
-                            >
-                                {remainingScreens[subscription.id] === 0
-                                    ? 'Tous les écrans sont utilisés pour ce service'
-                                    : remainingScreens[subscription.id] === undefined
-                                    ? 'Je suis dessus'
-                                    : 'Je ne suis plus dessus'}
-                            </button>
+                        {subscription.name} - {remainingScreens[subscription.id] || subscription.connected_users} utilisateurs connectés                    
+                        {subscription.connected_users > 0 ? (
+                            <>
+                                {users.map((user) => {
+                                    if (user.id === subscription.connected_users) {
+                                        return <span style={{ color: 'red' }}> - {user.name}</span>;
+                                    }
+                                    else {
+                                        return <span style={{ color: 'green' }}> - {user.name}</span>
+                                    };
+                                })}
+                            </>
+                        ) : null}
+                        <button
+                            onClick={() => handleConnect(subscription)}
+                            disabled={remainingScreens[subscription.id] === 0}
+                        >
+                            {remainingScreens[subscription.id] === 0
+                                ? 'Tous les écrans sont utilisés pour ce service'
+                                : remainingScreens[subscription.id] === undefined
+                                ? 'Je suis dessus'
+                                : 'Je ne suis plus dessus'}
+                        </button>
                         </li>
                     ))}
                 </ul>

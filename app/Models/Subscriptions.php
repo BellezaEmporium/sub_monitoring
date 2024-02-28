@@ -1,8 +1,11 @@
 <?php
 
-class Subscriptions
-{
+namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
+
+class Subscriptions extends Model
+{
     /**
      * The attributes that are mass assignable.
      *
@@ -11,6 +14,6 @@ class Subscriptions
     protected $fillable = [
         'name',
         'screen_numbers',
-        'remaining_screens'
+        'connected_users'
     ];
 }

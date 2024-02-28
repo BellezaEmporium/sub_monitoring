@@ -37,25 +37,18 @@ class LoginRequest extends FormRequest
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function authenticate(Request $request)
-    {
-        $login = $request->input('name');
-        $user = User::where('name', $login)->first();
+    public function authenticate() {
+        $this->ensureIsNotRateLimited();
 
-        if (!$user) {
-            return redirect()->back()->withErrors(['name' => 'Invalid login credentials']);
+        if (!Auth::attempt($this->only('name', 'password'), $this->filled('remember'))) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'name' => __('auth.failed'),
+            ]);
         }
 
-        $request->validate([
-            'password' => 'required|min:8',
-        ]);
-
-        if (Auth::attempt(['name' => $user->name, 'password' => $request->password])) {
-            Auth::loginUsingId($user->id);
-            return redirect('/');
-        } else {
-            return redirect()->back()->withErrors(['password' => 'Invalid login credentials']);
-        }
+        RateLimiter::clear($this->throttleKey());
     }
 
     /**
